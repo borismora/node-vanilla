@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+  <link rel="stylesheet" href="stylesheets/style.css">
+  <link rel="stylesheet" href="stylesheets/card.css">
+  <link rel="stylesheet" href="stylesheets/pagination.css">
+  <link rel="stylesheet" href="stylesheets/footer.css">
+  <link rel="stylesheet" href="stylesheets/dropdown.css">
+  <link rel="stylesheet" href="stylesheets/search.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="javascripts/vanilla.js"></script>
+  <title>Tienda Test</title>
+</head>
+
+<body>
+
+  <div class="topnav">
+    <a href="0" class="logo"><strong>TiendaTest</strong></a>
+
+    <div class="dropdown">
+      <button class="dropbtn">Tienda</button>
+      <div class="dropdown-content" id="tienda"></div>
+    </div>
+
+    <div class="search-container" style="float: right;">
+      <input type="text" placeholder="Buscar Producto.." id="wanted">
+      <button onclick='search()'><i class="fa fa-search"></i></button>
+    </div>
+  </div>
+
+  <div style="padding:20px">
+    <div>
+      Ordenar por:
+      <div class="dropdown">
+        <button class="dropbtn">menor a mayor precio</button>
+        <div class="dropdown-content" id="order">
+          <a onclick="getByOrder('minP')">menor a mayor precio</a>
+          <a onclick="getByOrder('maxP')">mayor a menor precio</a>
+          <a onclick="getByOrder('maxD')">mayor descuento</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="cards" class="wrapper"></div>
+    <br>
+    <div class="pagenumbers" id="pagination"></div> <br><br>
+
+
+    <div class="footer">
+      <p>Creado por Boris Mora</p>
+    </div>
+  </div>
+</body>
+
+<script>
+  loadCategories();
+  loadProducts(null, "minP");
+
+  function setupPagination(wrapper, pagination) {
+    wrapper.innerHTML = "";
+
+    let btn = paginationButton(1, pagination, "start");
+    wrapper.appendChild(btn);
+
+    //console.log(pagination.last_page+"\n")
+    for (let i = 1; i < pagination.last_page + 1; i++) {
+      btn = paginationButton(i, pagination, null);
+      wrapper.appendChild(btn);
+    }
+
+    btn = paginationButton(pagination.last_page, pagination, "end");
+    wrapper.appendChild(btn);
+  }
+
+  function paginationButton(page, pagination, extremo) {
+    let button = document.createElement('a');
+    button.href = "/" + page;
+    button.innerHTML = (extremo == "start") ? '<i class="fa fa-arrow-left"></i>' : (extremo == "end") ? '<i class="fa fa-arrow-right"></i>' : page;
+
+    if (pagination.current == page) button.classList.add('active');
+
+    button.addEventListener('click', function () {
+      pagination.current = page;
+      //DisplayList(items, list_element, rows, pagination.current);
+
+      let current_btn = document.querySelector('.pagenumbers a.active');
+      current_btn.classList.remove('active');
+
+      button.classList.add('active');
+    });
+
+    return button;
+  }
+
+  function newProduct(product) {
+    //setup products
+    const cards = document.getElementById('cards');
+    //new product
+    const card = document.createElement('div');
+    card.className = "box";
+    //add discount
+    const discount = document.createElement('div');
+    discount.innerHTML = "-" + product.discount + "%";
+    discount.style.textAlign = "right";
+    discount.style.color = "blue";
+    card.appendChild(discount);
+    //add image
+    const image = document.createElement('img');
+    image.className = "image-box";
+    if (product.url_image == "" || product.url_image == null)
+      image.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/600px-No_image_available.svg.png";
+    else
+      image.src = product.url_image;
+    card.appendChild(image);
+    //add title
+    const title = document.createElement('h4');
+    title.innerHTML = product.name;
+    card.appendChild(title);
+    //add separator
+    const separator = document.createElement('hr');
+    card.appendChild(separator);
+    //add price and cart
+    const bottom = document.createElement('div');
+    bottom.className = "grid-container";
+    const price = document.createElement('div');
+    price.innerHTML = "$" + product.price;
+    price.style.textAlign = "left";
+    bottom.appendChild(price);
+    const cart = document.createElement('div');
+    cart.innerHTML = '<a href=""><i class="fa fa-shopping-cart"></i></a>';
+    cart.style.textAlign = "right";
+    bottom.appendChild(cart);
+    card.appendChild(bottom);
+
+    return card;
+  }
+
+
+
+  function loadCategories() {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/get/categories', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(null);
+
+    xhr.onreadystatechange = function () {
+      const DONE = 4; // readyState 4 means the request is done.
+      const OK = 200; // status 200 is a successful return.
+      if (xhr.readyState === DONE) {
+        if (xhr.status === OK) {
+          //console.log(JSON.parse(xhr.responseText)); // 'This is the returned text.'
+          const res = JSON.parse(xhr.responseText);
+
+          const tienda = document.getElementById("tienda");
+          var categories = "";
+          res.forEach(category => {
+            categories += "<a onclick='selectCategory(" + category.id + ")'>" + category.name + "</a>";
+            tienda.innerHTML = categories;
+          });
+          console.log(res)
+        } else {
+          console.log('Error: ' + xhr.status); // An error occurred during the request.
+        }
+      }
+    };
+  }
+
+
+  function selectCategory(id) {
+    window.location.href = "/"+id;
+  }
+
+  function loadProducts(wanted, order) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/products', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+
+    const category = "{{ category }}";
+    const page = "{{ page }}";
+    console.log(category)
+
+    obj = JSON.stringify({ page, npp: 10, category, wanted, order });
+
+    xhr.send(obj);
+
+    xhr.onreadystatechange = function () {
+      const DONE = 4; // readyState 4 means the request is done.
+      const OK = 200; // status 200 is a successful return.
+      if (xhr.readyState === DONE) {
+        if (xhr.status === OK) {
+          //console.log(JSON.parse(xhr.responseText)); // 'This is the returned text.'
+          const res = JSON.parse(xhr.responseText);
+          console.log(res.pagination)
+          const cards = document.getElementById('cards');
+          //clear cards
+          cards.innerHTML = "";
+          res.products.forEach(product => {
+            const newProd = newProduct(product);
+
+            //add product
+            cards.appendChild(newProd);
+
+            //setup pagination
+            const pagination = document.getElementById("pagination");
+            setupPagination(pagination, res.pagination);
+          });
+        } else {
+          console.log('Error: ' + xhr.status); // An error occurred during the request.
+        }
+      }
+    };
+  }
+
+  function search() {
+    const wanted = document.getElementById('wanted')
+    loadProducts(wanted.value, "minP")
+  }
+
+  function getByOrder(order) {
+    loadProducts(null, order)
+  }
+
+  var input = document.getElementById("wanted");
+  // Execute a function when the user releases a key on the keyboard
+  input.addEventListener("keyup", function (event) {
+    // Number 13 is the "Enter" key on the keyboard
+    if (event.keyCode === 13) {
+      // Cancel the default action, if needed
+      event.preventDefault();
+      // Trigger the button element with a click
+      search();
+    }
+  });
+
+</script>
+
+</html>
