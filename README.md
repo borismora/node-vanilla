@@ -1,6 +1,6 @@
 # node-vanilla
 
-Entorno Backend + Cliente Vanilla
+Entorno NodeJS + Cliente Vanilla
 
 Instalar paquetes 
 ```node
