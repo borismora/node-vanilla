@@ -1,4 +1,15 @@
 # node-vanilla
+
 Entorno Backend + Cliente Vanilla
 
-test: https://node-vanilla.herokuapp.com/
+Instalar paquetes 
+```node
+npm i
+```
+
+Iniciar express
+```node
+npm start
+```
+
+Probar: https://node-vanilla.herokuapp.com/
